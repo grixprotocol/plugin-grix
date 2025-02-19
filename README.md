@@ -2,40 +2,6 @@
 
 A plugin that enables DeFi options data fetching and price analysis through the Grix Finance API integration.
 
-## Overview
-
-Grix Plugin provides real-time access to decentralized options trading data across multiple protocols, including price feeds for BTC and ETH. It aggregates options data from various DeFi protocols and provides comprehensive options market information through a simple interface.
-
-## Installation
-
-```bash
-pnpm add @elizaos/plugin-grix
-```
-
-## Configuration
-
-### Required Environment Variables
-
-```env
-GRIX_API_KEY=your_api_key  # Required: Get your API key from https://discord.com/invite/ZgPpr9psqp
-```
-
-### Character Configuration
-
-Add the plugin to your character configuration file (e.g., `characters/your_character.character.json`):
-
-```json
-{
-	"name": "Your Character",
-	"plugins": ["@elizaos/plugin-grix"],
-	"settings": {
-		"secrets": {
-			"GRIX_API_KEY": "your_api_key_here"
-		}
-	}
-}
-```
-
 ## Features
 
 ### Price Data
@@ -51,29 +17,72 @@ Add the plugin to your character configuration file (e.g., `characters/your_char
 -   Protocol-specific pricing
 -   Position types (long/short)
 
+## Available Actions
+
+### getOptionPrice
+
+Fetches options data across multiple protocols:
+
+-   Real-time options pricing
+-   Available strike prices
+-   Current expiry dates
+-   Protocol comparisons
+-   Liquidity information
+-   Position types (long/short)
+
+### getAssetPrice
+
+Retrieves real-time price data:
+
+-   Current BTC price
+-   Current ETH price
+-   Price updates in real-time
+ 
+## Installation
+
+```bash
+pnpm add @elizaos/plugin-grix
+```
+
+## Configuration
+
+To use the plugin, you'll need a Grix API key. You can request one by messaging us on [Discord](https://discord.com/invite/ZgPpr9psqp) or [Telegram](https://t.me/GrixFinance).
+
+There are two ways to configure your API key:
+
+### 1. Environment Variables
+
+```env
+GRIX_API_KEY=your_api_key
+```
+
+### 2. Character Configuration
+
+```json
+{
+	"name": "Your Character",
+	"plugins": ["@elizaos/plugin-grix"],
+	"settings": {
+		"secrets": {
+			"GRIX_API_KEY": "your_api_key_here"
+		}
+	}
+}
+```
+
 ## Quick Start
 
-1. Visit [Grix Finance](https://app.grix.finance/)
-2. Get your API key
-3. Add configuration to your character file
-4. Start querying options data!
+1. Visit [Grix Finance](https://app.grix.finance)
+2. Request your API key through our Discord or Telegram
+3. Add configuration using either method above
+4. Start fetching options data!
 
 ## Community & Support
 
 -   [Discord Community](https://discord.com/invite/ZgPpr9psqp)
 -   [Telegram Group](https://t.me/GrixFinance)
--   [Grix App](https://app.grix.finance/)
 -   [Documentation](https://app.grix.finance/docs)
 
-## License
-
-MIT
-
-## Dependencies
-
--   @elizaos/core: workspace:\*
--   ethers: ^6.7.1
--   zod: ^3.22.4
 
 ## Development
 
@@ -85,29 +94,24 @@ pnpm build
 
 ### Running with Eliza
 
-1. Install dependencies
+1. Install dependencies:
 
 ```bash
 pnpm install
 ```
 
-2. Set up environment variables
+2. Configure your API key using one of the methods described in the Configuration section
 
-```bash
-cp .env.example .env
-# Edit .env with your GRIX_API_KEY
-```
-
-3. Start Eliza with your character
+3. Start Eliza with your character:
 
 ```bash
 pnpm start --character="characters/your_character.character.json"
 ```
 
-## Contributing
+## License
 
-Contributions are welcome! Please read our contributing guidelines and submit pull requests to our repository.
+MIT
 
 ## Disclaimer
 
-This plugin is for accessing DeFi options data only. Please ensure compliance with your local regulations regarding options trading.
+Please ensure compliance with your local regulations regarding options trading.
