@@ -1,22 +1,26 @@
 {
-	"name": "@elizaos/plugin-grix",
-	"version": "0.1.1",
-	"description": "A plugin for Grix universal Language for DeFi Derivatives Interactions",
-	"main": "dist/index.js",
-	"types": "dist/index.d.ts",
+	"name": "@elizaos-plugins/plugin-grix",
+	"version": "0.25.9",
 	"type": "module",
-	"agentConfig": {
-		"pluginType": "elizaos:plugin:1.0.0",
-		"pluginParameters": {
-			"GRIX_API_KEY": {
-				"type": "string",
-				"description": "API key for accessing Grix services"
+	"main": "dist/index.js",
+	"module": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"exports": {
+		"./package.json": "./package.json",
+		".": {
+			"import": {
+				"@elizaos/source": "./src/index.ts",
+				"types": "./dist/index.d.ts",
+				"default": "./dist/index.js"
 			}
 		}
 	},
+	"files": [
+		"dist"
+	],
 	"dependencies": {
 		"@elizaos/core": "workspace:*",
-		"@grixprotocol/sdk": "1.0.0",
+		"@grixprotocol/sdk": "^1.0.0",
 		"zod": "^3.22.4"
 	},
 	"devDependencies": {
@@ -31,5 +35,8 @@
 		"lint:fix": "biome check --apply .",
 		"format": "biome format .",
 		"format:fix": "biome format --write ."
+	},
+	"publishConfig": {
+		"access": "public"
 	}
 }
