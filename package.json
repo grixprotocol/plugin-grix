@@ -1,0 +1,42 @@
+{
+	"name": "@elizaos-plugins/plugin-grix",
+	"version": "0.25.10",
+	"type": "module",
+	"main": "dist/index.js",
+	"module": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"exports": {
+		"./package.json": "./package.json",
+		".": {
+			"import": {
+				"@elizaos/source": "./src/index.ts",
+				"types": "./dist/index.d.ts",
+				"default": "./dist/index.js"
+			}
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"dependencies": {
+		"@elizaos/core": "workspace:*",
+		"@grixprotocol/sdk": "^1.2.16",
+		"zod": "^3.22.4"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.9.4",
+		"tsup": "^8.3.5"
+	},
+	"scripts": {
+		"build": "tsup --format esm --dts",
+		"dev": "tsup --format esm --dts --watch",
+		"clean": "rm -rf dist",
+		"lint": "biome lint .",
+		"lint:fix": "biome check --apply .",
+		"format": "biome format .",
+		"format:fix": "biome format --write ."
+	},
+	"publishConfig": {
+		"access": "public"
+	}
+}
