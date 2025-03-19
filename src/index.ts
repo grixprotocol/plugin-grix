@@ -5,6 +5,7 @@ import { getAssetPriceAction } from "./actions/getAssetPrice";
 import { getOptionPriceAction } from "./actions/getOptionPrice";
 import { getTradingSignalAction } from "./actions/getTradingSignal";
 import { showGrixHelpAction } from "./actions/showGrixHelp";
+import { getPerpsPairsAction } from "./actions/getPerpsPairs";
 
 /**
  * Grix Finance Plugin v2
@@ -27,6 +28,7 @@ export const grixPlugin: Plugin = {
 		getOptionPriceAction,
 		getTradingSignalAction,
 		showGrixHelpAction,
+		getPerpsPairsAction,
 	],
 	// Removed evaluators since actions now handle parameter extraction
 	evaluators: [],

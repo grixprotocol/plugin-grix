@@ -1,6 +1,5 @@
 import {
 	type Action,
-	composeContext,
 	elizaLogger,
 	generateObjectDeprecated,
 	type HandlerCallback,
@@ -11,7 +10,6 @@ import {
 } from "@elizaos/core";
 import { GrixService } from "../services";
 import { validateGrixConfig } from "../environment";
-import { ASSET_TYPES } from "../constants/api";
 
 const assetPriceTemplate = `Extract the cryptocurrency from the user's request.
 If not specified, default to BTC.

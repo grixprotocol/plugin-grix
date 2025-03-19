@@ -12,4 +12,6 @@ export const ERROR_MESSAGES = {
 	SERVICE_UNAVAILABLE: "The Grix service is currently unavailable. Please try again later.",
 	OPTION_FETCH_ERROR: (asset: string) => `Failed to fetch options data for ${asset}`,
 	PRICE_FETCH_ERROR: (asset: string) => `Failed to fetch price for ${asset}`,
+	PERPS_PAIRS_FETCH_ERROR: (protocolName: string) => `Failed to fetch perps pairs for ${protocolName}`,
+	INVALID_PROTOCOL: (protocolName: string) => `Invalid protocol. Only ${protocolName} is supported.`,
 } as const; 

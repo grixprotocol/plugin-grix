@@ -51,6 +51,8 @@ declare class ShowGrixHelpAction implements Action {
 }
 declare const showGrixHelpAction: ShowGrixHelpAction;
 
+declare const getPerpsPairsAction: Action;
+
 /**
  * Grix Finance Plugin v2
  * Provides cryptocurrency price feeds, options data, and trading signals
@@ -63,4 +65,4 @@ declare const showGrixHelpAction: ShowGrixHelpAction;
  */
 declare const grixPlugin: Plugin;
 
-export { GetTradingSignalAction, ShowGrixHelpAction, grixPlugin as default, getAssetPriceAction, getOptionPriceAction, getTradingSignalAction, grixPlugin, showGrixHelpAction };
+export { GetTradingSignalAction, ShowGrixHelpAction, grixPlugin as default, getAssetPriceAction, getOptionPriceAction, getPerpsPairsAction, getTradingSignalAction, grixPlugin, showGrixHelpAction };

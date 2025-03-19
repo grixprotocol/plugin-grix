@@ -1,6 +1,6 @@
 {
 	"name": "@elizaos-plugins/plugin-grix",
-	"version": "0.25.9",
+	"version": "0.25.10",
 	"type": "module",
 	"main": "dist/index.js",
 	"module": "dist/index.js",
@@ -20,7 +20,7 @@
 	],
 	"dependencies": {
 		"@elizaos/core": "workspace:*",
-		"@grixprotocol/sdk": "^1.0.0",
+		"@grixprotocol/sdk": "^1.2.16",
 		"zod": "^3.22.4"
 	},
 	"devDependencies": {

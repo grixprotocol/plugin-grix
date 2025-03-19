@@ -1,6 +1,6 @@
 // src/actions/getAssetPrice.ts
 import {
-  elizaLogger as elizaLogger5,
+  elizaLogger as elizaLogger6,
   generateObjectDeprecated,
   ModelClass
 } from "@elizaos/core";
@@ -30,6 +30,9 @@ var POSITION_TYPES = {
 var ASSET_TYPES = {
   BTC: "BTC",
   ETH: "ETH"
+};
+var PERPS_PROTOCOLS = {
+  HYPERLIQUID: "hyperliquid"
 };
 
 // src/types/error.ts
@@ -117,7 +120,9 @@ var ERROR_MESSAGES = {
   INVALID_POSITION_TYPE: "Invalid position type. Only 'long' and 'short' are supported.",
   SERVICE_UNAVAILABLE: "The Grix service is currently unavailable. Please try again later.",
   OPTION_FETCH_ERROR: (asset) => `Failed to fetch options data for ${asset}`,
-  PRICE_FETCH_ERROR: (asset) => `Failed to fetch price for ${asset}`
+  PRICE_FETCH_ERROR: (asset) => `Failed to fetch price for ${asset}`,
+  PERPS_PAIRS_FETCH_ERROR: (protocolName) => `Failed to fetch perps pairs for ${protocolName}`,
+  INVALID_PROTOCOL: (protocolName) => `Invalid protocol. Only ${protocolName} is supported.`
 };
 
 // src/services/price.ts
@@ -502,12 +507,72 @@ _SignalService.MAX_RETRIES = 10;
 _SignalService.RETRY_DELAY = 2e3;
 var SignalService = _SignalService;
 
+// src/services/perpsPairs.ts
+import { elizaLogger as elizaLogger4 } from "@elizaos/core";
+var PerpsPairsService = class extends BaseService {
+  constructor(options) {
+    super(options);
+  }
+  /**
+   * Get current price for a cryptocurrency
+   */
+  async getPerpsPairs(request) {
+    try {
+      this.validateProtocol(request.protocolName);
+      const sdk = await this.getSDK();
+      let assetName = null;
+      if (request.asset?.toLowerCase() === "btc") {
+        assetName = "BTC";
+      } else if (request.asset?.toLowerCase() === "eth") {
+        assetName = "ETH";
+      } else {
+        elizaLogger4.info("\u{1F504} No asset provided, or provided asset not supported, fetching all pairs");
+      }
+      const pairsRequest = {
+        protocol: request.protocolName
+      };
+      if (assetName) {
+        pairsRequest.baseAsset = assetName;
+      }
+      const pairsResponse = await sdk.getPerpsPairs(pairsRequest);
+      const formattedPairs = pairsResponse.pairs.map((pair) => {
+        const [baseAsset, quoteAsset] = pair.split("-");
+        return {
+          baseAsset,
+          quoteAsset
+        };
+      });
+      return {
+        pairs: formattedPairs
+      };
+    } catch (error) {
+      throw this.handleError(
+        error,
+        ERROR_MESSAGES.PERPS_PAIRS_FETCH_ERROR(request.protocolName)
+      );
+    }
+  }
+  /**
+   * Validate asset is supported
+   */
+  validateProtocol(protocolName) {
+    const normalizedProtocolName = protocolName.toLowerCase();
+    const validProtocols = Object.values(PERPS_PROTOCOLS);
+    if (!validProtocols.includes(normalizedProtocolName)) {
+      throw new InvalidParameterError(
+        ERROR_MESSAGES.INVALID_PROTOCOL(protocolName)
+      );
+    }
+  }
+};
+
 // src/services/index.ts
 var GrixService = class {
   constructor(options) {
     this.priceService = new PriceService(options);
     this.optionService = new OptionService(options);
     this.signalService = new SignalService(options);
+    this.perpsPairsService = new PerpsPairsService(options);
   }
   static formatPrice(price) {
     return new Intl.NumberFormat("en-US", {
@@ -533,28 +598,34 @@ var GrixService = class {
   async generateSignals(request) {
     return this.signalService.generateSignals(request);
   }
+  /**
+   * Perps pairs operations
+   */
+  async getPerpsPairs(request) {
+    return this.perpsPairsService.getPerpsPairs(request);
+  }
 };
 
 // src/environment.ts
 import { z } from "zod";
-import { elizaLogger as elizaLogger4 } from "@elizaos/core";
+import { elizaLogger as elizaLogger5 } from "@elizaos/core";
 var grixEnvSchema = z.object({
   GRIX_API_KEY: z.string().min(1, "Grix API key is required"),
   OPENAI_API_KEY: z.string().min(1, "OpenAI API key is required")
 });
 async function validateGrixConfig(runtime) {
-  elizaLogger4.info("\u{1F510} Validating Grix configuration...");
+  elizaLogger5.info("\u{1F510} Validating Grix configuration...");
   try {
     const config = {
       GRIX_API_KEY: runtime.getSetting("GRIX_API_KEY"),
       OPENAI_API_KEY: runtime.getSetting("OPENAI_API_KEY")
     };
-    elizaLogger4.info("Checking required settings...");
+    elizaLogger5.info("Checking required settings...");
     const result = grixEnvSchema.parse(config);
-    elizaLogger4.info("\u2705 Configuration validated successfully");
+    elizaLogger5.info("\u2705 Configuration validated successfully");
     return result;
   } catch (error) {
-    elizaLogger4.error("\u274C Configuration validation failed:", error);
+    elizaLogger5.error("\u274C Configuration validation failed:", error);
     if (error instanceof z.ZodError) {
       const errorMessages = error.errors.map((err) => `${err.path.join(".")}: ${err.message}`).join("\n");
       throw new Error(`Grix configuration validation failed:
@@ -599,7 +670,7 @@ var getAssetPriceAction = {
   },
   handler: async (runtime, message, state, _options, callback) => {
     try {
-      elizaLogger5.warn("\u{1F680} Starting getAssetPrice handler");
+      elizaLogger6.warn("\u{1F680} Starting getAssetPrice handler");
       const config = await validateGrixConfig(runtime);
       const grixService = new GrixService({ apiKey: config.GRIX_API_KEY });
       const extractedParams = await generateObjectDeprecated({
@@ -607,11 +678,11 @@ var getAssetPriceAction = {
         context: assetPriceTemplate.replace("{{recentMessages}}", message.content.text),
         modelClass: ModelClass.SMALL
       });
-      elizaLogger5.warn("\u{1F3AF} Extracted asset parameters:", extractedParams);
+      elizaLogger6.warn("\u{1F3AF} Extracted asset parameters:", extractedParams);
       const normalizedParams = {
         asset: (extractedParams.asset || "BTC").toUpperCase()
       };
-      elizaLogger5.warn("\u{1F504} Normalized parameters:", normalizedParams);
+      elizaLogger6.warn("\u{1F504} Normalized parameters:", normalizedParams);
       const result = await grixService.getPrice(normalizedParams);
       if (callback) {
         await callback({
@@ -623,7 +694,7 @@ var getAssetPriceAction = {
       }
       return true;
     } catch (error) {
-      elizaLogger5.error("Error in GET_ASSET_PRICE action:", error);
+      elizaLogger6.error("Error in GET_ASSET_PRICE action:", error);
       if (callback) {
         await callback({
           text: `Sorry, I couldn't get the price. Error: ${error}`
@@ -680,8 +751,8 @@ var getAssetPriceAction = {
 
 // src/actions/getOptionPrice.ts
 import {
-  composeContext as composeContext2,
-  elizaLogger as elizaLogger6,
+  composeContext,
+  elizaLogger as elizaLogger7,
   generateObjectDeprecated as generateObjectDeprecated2,
   ModelClass as ModelClass2
 } from "@elizaos/core";
@@ -717,32 +788,32 @@ var getOptionPriceAction = {
   handler: async (runtime, message, state, _options, callback) => {
     try {
       console.log("\u{1F680} Starting getOptionPrice handler");
-      elizaLogger6.warn("\u{1F680} Starting getOptionPrice handler");
+      elizaLogger7.warn("\u{1F680} Starting getOptionPrice handler");
       const config = await validateGrixConfig(runtime);
       const grixService = new GrixService({ apiKey: config.GRIX_API_KEY });
       let localState = state;
       localState = !localState ? await runtime.composeState(message) : await runtime.updateRecentMessageState(localState);
-      const recentMessages = composeContext2({
+      const recentMessages = composeContext({
         state: localState,
         template: "{{conversation}}"
       });
-      elizaLogger6.warn("\u{1F4DD} Recent messages:", recentMessages);
+      elizaLogger7.warn("\u{1F4DD} Recent messages:", recentMessages);
       const userMessage = message.content.text;
-      elizaLogger6.warn("\u{1F4DD} Processing user message:", userMessage);
+      elizaLogger7.warn("\u{1F4DD} Processing user message:", userMessage);
       const extractedParams = await generateObjectDeprecated2({
         runtime,
         context: optionPriceTemplate.replace("{{recentMessages}}", userMessage),
         modelClass: ModelClass2.SMALL
       });
-      elizaLogger6.warn("\u{1F3AF} Raw extracted parameters:", extractedParams);
+      elizaLogger7.warn("\u{1F3AF} Raw extracted parameters:", extractedParams);
       const normalizedParams = {
         asset: (extractedParams.asset || "BTC").toUpperCase(),
         optionType: (extractedParams.optionType || "call").toLowerCase(),
         positionType: (extractedParams.positionType || "long").toLowerCase()
       };
-      elizaLogger6.warn("\u{1F504} Normalized parameters:", normalizedParams);
+      elizaLogger7.warn("\u{1F504} Normalized parameters:", normalizedParams);
       const result = await grixService.getOptions(normalizedParams);
-      elizaLogger6.warn("\u2705 Got options result:", {
+      elizaLogger7.warn("\u2705 Got options result:", {
         asset: result.asset,
         optionCount: result.options.length
       });
@@ -755,7 +826,7 @@ var getOptionPriceAction = {
       }
       return true;
     } catch (error) {
-      elizaLogger6.error("Error in option price handler:", error);
+      elizaLogger7.error("Error in option price handler:", error);
       if (callback) {
         await callback({
           text: `Sorry, I couldn't get the option prices. Error: ${error}`
@@ -853,8 +924,8 @@ ${symbol}
 
 // src/actions/getTradingSignal.ts
 import {
-  composeContext as composeContext3,
-  elizaLogger as elizaLogger7,
+  composeContext as composeContext2,
+  elizaLogger as elizaLogger8,
   generateObjectDeprecated as generateObjectDeprecated3,
   ModelClass as ModelClass3
 } from "@elizaos/core";
@@ -939,7 +1010,7 @@ var GetTradingSignalAction = class {
       const grixService = new GrixService({ apiKey: config.GRIX_API_KEY });
       let localState = state;
       localState = !localState ? await runtime.composeState(message) : await runtime.updateRecentMessageState(localState);
-      const recentMessages = composeContext3({
+      const recentMessages = composeContext2({
         state: localState,
         template: "{{conversation}}"
       });
@@ -948,7 +1019,7 @@ var GetTradingSignalAction = class {
         context: tradingSignalTemplate.replace("{{recentMessages}}", message.content.text),
         modelClass: ModelClass3.SMALL
       });
-      elizaLogger7.warn("\u{1F3AF} Extracted signal parameters:", extractedParams);
+      elizaLogger8.warn("\u{1F3AF} Extracted signal parameters:", extractedParams);
       const normalizedParams = {
         asset: (extractedParams.asset || "BTC").toUpperCase(),
         budget_usd: extractedParams.budget_usd || 1e4,
@@ -974,7 +1045,7 @@ var GetTradingSignalAction = class {
       }
       return true;
     } catch (error) {
-      elizaLogger7.error("Error in trading signal action handler:", error);
+      elizaLogger8.error("Error in trading signal action handler:", error);
       if (callback) {
         await callback({
           text: `Sorry, I couldn't generate trading signals. Error: ${error}`
@@ -1092,6 +1163,149 @@ Here are some examples of what you can ask me:
 };
 var showGrixHelpAction = new ShowGrixHelpAction();
 
+// src/actions/getPerpsPairs.ts
+import {
+  elizaLogger as elizaLogger9,
+  generateObjectDeprecated as generateObjectDeprecated4,
+  ModelClass as ModelClass4
+} from "@elizaos/core";
+var perpsPairsTemplate = `Extract the protocol and optional base asset from the user's request.
+  If protocol is not specified, default to "Hyperliquid".
+  
+  Examples of user requests and their parameters:
+  - "What trading pairs are available on Hyperliquid?" -> {"protocol": "Hyperliquid"}
+  - "Show me Synthetix pairs for BTC" -> {"protocol": "synthetix", "baseAsset": "BTC"}
+  - "What are the available pairs on Hyperliquid for ETH?" -> {"protocol": "Hyperliquid", "baseAsset": "ETH"}
+  - "List all Hyperliquid trading pairs" -> {"protocol": "hyperliquid"}
+  
+  Look for these indicators:
+  - Protocol: Hyperliquid, synthetix, hyperliquid, etc.
+  - Base assets: BTC, ETH, etc.
+  
+  User's request: "{{recentMessages}}"
+  
+  Return ONLY a JSON object with the parameters:
+  {
+      "protocol": "protocol_name",
+      "baseAsset": "ASSET_SYMBOL" (optional)
+  }`;
+var getPerpsPairsAction = {
+  name: "GET_PERP_PAIRS",
+  similes: [
+    "FETCH_TRADING_PAIRS",
+    "LIST_PAIRS",
+    "SHOW_PERP_PAIRS",
+    "MARKET_PAIRS",
+    "AVAILABLE_PAIRS",
+    "TRADING_PAIRS",
+    "WHAT_CAN_I_TRADE",
+    "PERPETUAL_PAIRS"
+  ],
+  description: "Get available perpetual trading pairs for a protocol",
+  validate: async (runtime) => {
+    try {
+      await validateGrixConfig(runtime);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+  handler: async (runtime, message, state, _options, callback) => {
+    try {
+      elizaLogger9.warn("\u{1F680} Starting getPerpPairs handler");
+      const config = await validateGrixConfig(runtime);
+      const grixService = new GrixService({ apiKey: config.GRIX_API_KEY });
+      const extractedParams = await generateObjectDeprecated4({
+        runtime,
+        context: perpsPairsTemplate.replace("{{recentMessages}}", message.content.text),
+        modelClass: ModelClass4.SMALL
+      });
+      elizaLogger9.warn("\u{1F3AF} Extracted parameters:", extractedParams);
+      const normalizedParams = {
+        protocolName: (extractedParams.protocol || "Hyperliquid").toLowerCase(),
+        asset: extractedParams.baseAsset
+      };
+      elizaLogger9.warn("\u{1F504} Normalized parameters:", normalizedParams);
+      const result = await grixService.getPerpsPairs(normalizedParams);
+      if (callback) {
+        let responseText = `Available trading pairs for ${normalizedParams.protocolName.toUpperCase()}`;
+        if (normalizedParams.asset) {
+          responseText += ` with ${normalizedParams.asset}`;
+        }
+        responseText += ":\n";
+        result.pairs.forEach((pair) => {
+          responseText += `- ${pair.baseAsset}/${pair.quoteAsset}
+`;
+        });
+        await callback({
+          text: responseText
+        });
+      }
+      if (state) {
+        let formattedPairs = "";
+        result.pairs.forEach((pair) => {
+          formattedPairs += `- ${pair.baseAsset}/${pair.quoteAsset}
+`;
+        });
+        state.responseData = { text: formattedPairs, action: "GET_PERP_PAIRS" };
+      }
+      return true;
+    } catch (error) {
+      elizaLogger9.error("Error in GET_PERP_PAIRS action:", error);
+      if (callback) {
+        await callback({
+          text: `Sorry, I couldn't fetch the trading pairs. Error: ${error}`
+        });
+      }
+      return false;
+    }
+  },
+  examples: [
+    [
+      {
+        user: "{{user1}}",
+        content: {
+          text: "What trading pairs are available on Hyperliquid?"
+        }
+      },
+      {
+        user: "{{agent}}",
+        content: {
+          text: "I'll check the available pairs on Hyperliquid for you.",
+          action: "GET_PERP_PAIRS"
+        }
+      },
+      {
+        user: "{{agent}}",
+        content: {
+          text: "Available trading pairs for Hyperliquid:\n- BTC/USD\n- ETH/USD\n- LINK/USD"
+        }
+      }
+    ],
+    [
+      {
+        user: "{{user1}}",
+        content: {
+          text: "Show me Synthetix pairs for ETH"
+        }
+      },
+      {
+        user: "{{agent}}",
+        content: {
+          text: "I'll fetch the Synthetix pairs for ETH.",
+          action: "GET_PERP_PAIRS"
+        }
+      },
+      {
+        user: "{{agent}}",
+        content: {
+          text: "Available trading pairs for SYNTHETIX with ETH:\n- ETH/USD\n- ETH/EUR"
+        }
+      }
+    ]
+  ]
+};
+
 // src/index.ts
 var grixPlugin = {
   name: "grixv2",
@@ -1100,7 +1314,8 @@ var grixPlugin = {
     getAssetPriceAction,
     getOptionPriceAction,
     getTradingSignalAction,
-    showGrixHelpAction
+    showGrixHelpAction,
+    getPerpsPairsAction
   ],
   // Removed evaluators since actions now handle parameter extraction
   evaluators: [],
@@ -1113,6 +1328,7 @@ export {
   index_default as default,
   getAssetPriceAction,
   getOptionPriceAction,
+  getPerpsPairsAction,
   getTradingSignalAction,
   grixPlugin,
   showGrixHelpAction

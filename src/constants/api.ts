@@ -21,3 +21,7 @@ export const ASSET_TYPES = {
 	BTC: "BTC",
 	ETH: "ETH",
 } as const; 
+
+export const PERPS_PROTOCOLS = {
+	HYPERLIQUID: "hyperliquid",
+} as const;

@@ -2,6 +2,7 @@ import type { ServiceOptions } from "./base";
 import { PriceService } from "./price";
 import { OptionService } from "./option";
 import { SignalService } from "./signal";
+import { PerpsPairsService } from "./perpsPairs";
 
 /**
  * Main service facade that coordinates between specialized services
@@ -10,11 +11,13 @@ export class GrixService {
 	private priceService: PriceService;
 	private optionService: OptionService;
 	private signalService: SignalService;
+	private perpsPairsService: PerpsPairsService;
 
 	constructor(options?: ServiceOptions) {
 		this.priceService = new PriceService(options);
 		this.optionService = new OptionService(options);
 		this.signalService = new SignalService(options);
+		this.perpsPairsService = new PerpsPairsService(options);
 	}
 
 	static formatPrice(price: number): string {
@@ -57,6 +60,13 @@ export class GrixService {
 	}) {
 		return this.signalService.generateSignals(request);
 	}
+
+	/**
+	 * Perps pairs operations
+	 */
+	async getPerpsPairs(request: { protocolName: string; asset?: string }) {
+		return this.perpsPairsService.getPerpsPairs(request);
+	}
 }
 
-export { PriceService, OptionService, SignalService };
+export { PriceService, OptionService, SignalService, PerpsPairsService };

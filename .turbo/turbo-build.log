@@ -1,0 +1,18 @@
+
+
+> @elizaos-plugins/plugin-grix@0.25.9 build /Users/tomelia/grixRepos/eliza/packages/plugin-grix
+> tsup --format esm --dts
+
+[34mCLI[39m Building entry: src/index.ts
+[34mCLI[39m Using tsconfig: tsconfig.json
+[34mCLI[39m tsup v8.3.5
+[34mCLI[39m Using tsup config: /Users/tomelia/grixRepos/eliza/packages/plugin-grix/tsup.config.ts
+[34mCLI[39m Target: es2020
+[34mCLI[39m Cleaning output folder
+[34mESM[39m Build start
+[32mESM[39m [1mdist/index.js     [22m[32m42.32 KB[39m
+[32mESM[39m [1mdist/index.js.map [22m[32m78.34 KB[39m
+[32mESM[39m ⚡️ Build success in 16ms
+DTS Build start
+DTS ⚡️ Build success in 983ms
+DTS dist/index.d.ts 2.13 KB
